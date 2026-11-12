@@ -1,0 +1,13 @@
+data/
+notebook.ipynb
+train.py
+download_data.py
+README.md
+.git/
+.gitignore
+.dockerignore
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/

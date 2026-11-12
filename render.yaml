@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: diabetes-risk-prediction
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
