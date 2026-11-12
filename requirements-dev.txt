@@ -1,0 +1,4 @@
+# Dependencias extra para reproducir notebook.ipynb (gráficos).
+-r requirements.txt
+matplotlib==3.11.1
+seaborn==0.13.2

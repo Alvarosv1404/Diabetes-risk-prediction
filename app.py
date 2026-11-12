@@ -7,7 +7,7 @@ Endpoints:
     GET  /health   -> verificación de estado + metadatos del modelo
 
 Uso:
-    python predict.py
+    python app.py
     # luego abre http://localhost:9696
 """
 

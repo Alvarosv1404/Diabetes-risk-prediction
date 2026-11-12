@@ -75,11 +75,12 @@ diabetes-risk-prediction/
 ├── README.md                  # Este archivo
 ├── notebook.ipynb             # EDA + comparación de modelos + ajuste + evaluación (ejecutado)
 ├── train.py                   # Entrena y ajusta los modelos, guarda el pipeline
-├── predict.py                 # Servicio web Flask (formulario HTML + API JSON)
+├── app.py                     # Servicio web Flask (formulario HTML + API JSON)
 ├── download_data.py           # Vuelve a descargar el dataset (opcional)
-├── requirements.txt           # Dependencias con versiones fijas
+├── requirements.txt           # Dependencias del servicio (versiones fijas)
+├── requirements-dev.txt       # Dependencias extra para el notebook
+├── .python-version            # Versión de Python que usa Vercel
 ├── Dockerfile                 # Imagen de contenedor para el servicio web
-├── render.yaml                # Configuración de despliegue en Render
 ├── data/
 │   └── diabetes.csv           # Dataset (incluido en el repo)
 └── model/
@@ -107,8 +108,16 @@ python -m venv .venv
 
 ### 5.2 Instalar las dependencias
 
+Para ejecutar el servicio (Flask, scikit-learn, pandas):
+
 ```bash
 pip install -r requirements.txt
+```
+
+Para reproducir el notebook (agrega matplotlib y seaborn):
+
+```bash
+pip install -r requirements-dev.txt
 ```
 
 ### 5.3 (Opcional) descargar el dataset
@@ -142,6 +151,7 @@ Esto reescribe `model/diabetes_pipeline.joblib` y `model/metrics.json`.
 ### 5.5 Explorar el notebook
 
 ```bash
+pip install -r requirements-dev.txt
 jupyter notebook notebook.ipynb
 ```
 
@@ -150,7 +160,7 @@ El notebook ya está ejecutado, así que los gráficos y resultados se ven direc
 ### 5.6 Ejecutar el servicio web localmente
 
 ```bash
-python predict.py
+python app.py
 ```
 
 Abre **<http://localhost:9696>** en el navegador, o llama a la API JSON:
@@ -204,21 +214,31 @@ docker run --rm -p 9696:9696 diabetes-risk-prediction
 
 Luego abre <http://localhost:9696> o repite la llamada `curl` de arriba.
 
-La imagen solo copia `predict.py` y `model/`, así que no incluye el notebook, los datos de entrenamiento ni las dependencias de desarrollo.
+La imagen solo copia `app.py` y `model/`, así que no incluye el notebook, los datos de entrenamiento ni las dependencias de desarrollo.
 
 ---
 
-## 7. Despliegue en la nube (Render)
+## 7. Despliegue en la nube (Vercel)
 
-El servicio lee la variable de entorno estándar `$PORT`, por lo que funciona en Render, Railway, Fly.io o cualquier proveedor de contenedores. El archivo [`render.yaml`](render.yaml) contiene la configuración.
+El servicio se despliega **tal cual** en [Vercel](https://vercel.com) con el plan Hobby (gratis y sin tarjeta). Vercel reconoce `app.py` como una aplicación Flask y la ejecuta como función serverless: no hay servidor que se apague por inactividad, solo un arranque en frío de uno o dos segundos en la primera visita.
 
-1. Sube este repositorio a GitHub.
-2. Crea una cuenta gratuita en <https://render.com> y elige **New → Blueprint** (o **New → Web Service** y selecciona el repo).
-3. Render detecta el `Dockerfile` y el `render.yaml` automáticamente.
-4. Espera a que termine el build y copia la URL pública (`https://<nombre>.onrender.com`).
-5. Pruébala con `curl https://<nombre>.onrender.com/health`.
+1. Entra a <https://vercel.com> e inicia sesión con GitHub.
+2. Clic en **Add New → Project** e importa el repositorio `diabetes-risk-prediction`.
+3. No cambies ninguna opción: Vercel detecta Flask, instala `requirements.txt` y usa Python 3.13 gracias al archivo `.python-version`.
+4. Clic en **Deploy** y espera un par de minutos.
+5. Tu URL pública quedará como `https://diabetes-risk-prediction.vercel.app`.
 
-Cuando esté en línea, agrega la URL al inicio de este README.
+Comprueba que responde:
+
+```bash
+curl https://TU-URL.vercel.app/health
+```
+
+```json
+{"status": "ok", "model_loaded": true, "model": "Regresión Logística", "features": ["..."]}
+```
+
+El repositorio también incluye un `Dockerfile`, así que el mismo servicio puede desplegarse en cualquier plataforma de contenedores (Render, Railway, Fly.io, Cloud Run). En ese caso el contenedor escucha en `$PORT` y arranca con `gunicorn app:app`.
 
 ---
 
@@ -231,7 +251,7 @@ Cuando esté en línea, agrega la URL al inicio de este README.
 5. **Ajuste** — `GridSearchCV` sobre `C`, `class_weight`, profundidad de árboles, número de estimadores y tasa de aprendizaje.
 6. **Evaluación** — exactitud, precisión, recall, F1, ROC AUC y matriz de confusión sobre el conjunto de prueba.
 7. **Exportación** — `train.py` reproduce el entrenamiento; el pipeline se guarda con `joblib`.
-8. **Servicio** — `predict.py` (Flask) expone un formulario HTML, una API JSON y un endpoint de salud; `Dockerfile` lo empaqueta.
+8. **Servicio** — `app.py` (Flask) expone un formulario HTML, una API JSON y un endpoint de salud; `Dockerfile` lo empaqueta.
 
 ---
 
