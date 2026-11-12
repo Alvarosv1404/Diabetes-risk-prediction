@@ -1,18 +1,18 @@
 """
-Train a model that predicts diabetes risk (binary classification).
+Entrena un modelo que predice el riesgo de diabetes (clasificación binaria).
 
-The script:
-  1. Loads the Pima Indians Diabetes dataset.
-  2. Cleans it (biologically impossible zeros are treated as missing values).
-  3. Compares three models with 5-fold cross-validation.
-  4. Tunes the hyperparameters of every model with GridSearchCV.
-  5. Evaluates the best model on a held-out test set.
-  6. Saves the full pipeline and the metrics to disk.
+El script:
+  1. Carga el dataset de diabetes de los indios Pima.
+  2. Lo limpia (los ceros biológicamente imposibles se tratan como valores faltantes).
+  3. Compara tres modelos con validación cruzada de 5 pliegues.
+  4. Ajusta los hiperparámetros de cada modelo con GridSearchCV.
+  5. Evalúa el mejor modelo sobre un conjunto de prueba reservado.
+  6. Guarda el pipeline completo y las métricas en disco.
 
-Usage:
+Uso:
     python train.py
 
-Outputs:
+Salidas:
     model/diabetes_pipeline.joblib
     model/metrics.json
 """
@@ -61,23 +61,23 @@ FEATURES = [
 ]
 TARGET = "Outcome"
 
-# In this dataset a zero in these columns means "not measured", not a real value:
-# a living person cannot have 0 glucose, 0 blood pressure, 0 BMI, etc.
+# En este dataset un cero en estas columnas significa "no medido", no un valor real:
+# una persona viva no puede tener 0 de glucosa, 0 de presión arterial, 0 de IMC, etc.
 ZERO_AS_MISSING = ["Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"]
 
 
 def load_data(path: Path = DATA_PATH) -> pd.DataFrame:
-    """Read the CSV dataset."""
+    """Lee el dataset desde el archivo CSV."""
     if not path.exists():
         raise FileNotFoundError(
-            f"Dataset not found at {path}. "
-            "Download it with: python download_data.py"
+            f"No se encontró el dataset en {path}. "
+            "Descárgalo con: python download_data.py"
         )
     return pd.read_csv(path)
 
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Replace impossible zeros with NaN so the imputer can handle them."""
+    """Reemplaza los ceros imposibles por NaN para que el imputador los maneje."""
     df = df.copy()
     for column in ZERO_AS_MISSING:
         if column in df.columns:
@@ -86,7 +86,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_pipeline(estimator) -> Pipeline:
-    """Impute missing values, scale the features and attach the classifier."""
+    """Imputa los valores faltantes, escala las características y agrega el clasificador."""
     return Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),
@@ -97,7 +97,7 @@ def build_pipeline(estimator) -> Pipeline:
 
 
 def get_model_grids() -> dict[str, dict]:
-    """Return the candidate models and the hyperparameters to tune."""
+    """Devuelve los modelos candidatos y los hiperparámetros a ajustar."""
     return {
         "logistic_regression": {
             "pipeline": build_pipeline(
@@ -133,7 +133,7 @@ def get_model_grids() -> dict[str, dict]:
 
 
 def evaluate(model, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
-    """Compute the metrics used to compare models on the test set."""
+    """Calcula las métricas que se usan para comparar los modelos en el conjunto de prueba."""
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
     return {
@@ -149,12 +149,12 @@ def evaluate(model, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
 def main() -> None:
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Loading data...")
+    print("Cargando datos...")
     df = clean_data(load_data())
     X = df[FEATURES]
     y = df[TARGET]
 
-    print(f"Rows: {len(df)} | Features: {len(FEATURES)} | Positive rate: {y.mean():.2%}")
+    print(f"Filas: {len(df)} | Características: {len(FEATURES)} | Tasa de positivos: {y.mean():.2%}")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y
@@ -165,7 +165,7 @@ def main() -> None:
     best_name, best_score, best_model = None, -np.inf, None
 
     for name, config in get_model_grids().items():
-        print(f"\nTuning {name}...")
+        print(f"\nAjustando {name}...")
         search = GridSearchCV(
             estimator=config["pipeline"],
             param_grid=config["params"],
@@ -185,15 +185,15 @@ def main() -> None:
             "cv_roc_auc": round(float(search.best_score_), 4),
             "test": test_metrics,
         }
-        print(f"  CV ROC AUC : {search.best_score_:.4f}")
-        print(f"  Test ROC AUC: {test_metrics['roc_auc']:.4f}")
-        print(f"  Best params: {results[name]['best_params']}")
+        print(f"  ROC AUC en CV   : {search.best_score_:.4f}")
+        print(f"  ROC AUC en prueba: {test_metrics['roc_auc']:.4f}")
+        print(f"  Mejores parámetros: {results[name]['best_params']}")
 
         if search.best_score_ > best_score:
             best_name, best_score, best_model = name, search.best_score_, search.best_estimator_
 
-    print(f"\nBest model: {best_name} (CV ROC AUC = {best_score:.4f})")
-    print("\nClassification report on the test set:")
+    print(f"\nMejor modelo: {best_name} (ROC AUC en CV = {best_score:.4f})")
+    print("\nReporte de clasificación sobre el conjunto de prueba:")
     print(classification_report(y_test, best_model.predict(X_test), digits=4))
 
     bundle = {
@@ -215,8 +215,8 @@ def main() -> None:
         encoding="utf-8",
     )
 
-    print(f"\nModel saved to:   {MODEL_PATH}")
-    print(f"Metrics saved to: {METRICS_PATH}")
+    print(f"\nModelo guardado en:  {MODEL_PATH}")
+    print(f"Métricas guardadas en: {METRICS_PATH}")
 
 
 if __name__ == "__main__":

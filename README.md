@@ -1,97 +1,97 @@
-# Diabetes Risk Prediction
+# Predicción de Riesgo de Diabetes
 
-A machine learning web service that estimates the probability that a patient has diabetes from routine clinical measurements.
+Servicio web de machine learning que estima la probabilidad de que un paciente tenga diabetes a partir de mediciones clínicas rutinarias.
 
 [![Python](https://img.shields.io/badge/Python-3.13%2B-blue)](https://www.python.org/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-orange)](https://scikit-learn.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1-black)](https://flask.palletsprojects.com/)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED)](https://www.docker.com/)
+[![Docker](https://img.shields.io/badge/Docker-listo-2496ED)](https://www.docker.com/)
 
 ---
 
-## 1. Problem description
+## 1. Descripción del problema
 
-Diabetes is a chronic disease that affects hundreds of millions of people, and many cases are diagnosed late because the early symptoms are easy to ignore. A model that flags high-risk patients using inexpensive clinical measurements can help a clinic decide who should take a confirmatory blood test first.
+La diabetes es una enfermedad crónica que afecta a cientos de millones de personas, y muchos casos se diagnostican tarde porque los síntomas iniciales son fáciles de ignorar. Un modelo que marque a los pacientes de alto riesgo usando mediciones clínicas económicas puede ayudar a una clínica a decidir a quién conviene hacerle primero la prueba de sangre de confirmación.
 
-**Goal:** predict the binary target `Outcome` (1 = diabetes, 0 = no diabetes) from 8 clinical features.
+**Objetivo:** predecir la variable binaria `Outcome` (1 = diabetes, 0 = sin diabetes) a partir de 8 características clínicas.
 
-**How the prediction is used:** the doctor fills a small web form with the patient's values and immediately gets a risk probability and a `high risk` / `low risk` label. It is a **screening aid**, not a medical diagnosis.
+**Cómo se usa la predicción:** el médico llena un pequeño formulario web con los valores del paciente y obtiene de inmediato una probabilidad de riesgo y una etiqueta `riesgo alto` / `riesgo bajo`. Es una **herramienta de tamizaje**, no un diagnóstico médico.
 
-**Why a machine learning model?** The relationship between glucose, BMI, age, insulin and diabetes is not a simple threshold. A model can combine all the measurements at the same time and give a calibrated probability that is easier to act on than a set of separate cut-offs.
+**¿Por qué un modelo de machine learning?** La relación entre glucosa, IMC, edad, insulina y diabetes no es un simple umbral. Un modelo puede combinar todas las mediciones al mismo tiempo y entregar una probabilidad que es más fácil de interpretar que un conjunto de cortes separados.
 
 ---
 
 ## 2. Dataset
 
-**Pima Indians Diabetes Database** — originally from the National Institute of Diabetes and Digestive and Kidney Diseases (NIDDK), distributed as a public dataset.
+**Base de datos de diabetes de los indios Pima** — originalmente del National Institute of Diabetes and Digestive and Kidney Diseases (NIDDK), distribuida como dataset público.
 
-* File: [`data/diabetes.csv`](data/diabetes.csv)
-* Source: <https://raw.githubusercontent.com/plotly/datasets/master/diabetes.csv>
-* Rows: **768** patients (women of Pima Indian heritage, 21+ years old)
-* Target: `Outcome` (1 = diabetes, 0 = no diabetes) — **34.9% positive rate**
-* Licence: public domain / freely redistributable for educational use
+* Archivo: [`data/diabetes.csv`](data/diabetes.csv)
+* Fuente: <https://raw.githubusercontent.com/plotly/datasets/master/diabetes.csv>
+* Filas: **768** pacientes (mujeres de ascendencia india Pima, de 21 años o más)
+* Variable objetivo: `Outcome` (1 = diabetes, 0 = sin diabetes) — **34.9% de casos positivos**
+* Licencia: dominio público / redistribuible libremente con fines educativos
 
-| Feature | Description |
+| Característica | Descripción |
 |---|---|
-| `Pregnancies` | Number of pregnancies |
-| `Glucose` | Plasma glucose concentration (2-hour oral glucose tolerance test, mg/dL) |
-| `BloodPressure` | Diastolic blood pressure (mm Hg) |
-| `SkinThickness` | Triceps skin fold thickness (mm) |
-| `Insulin` | 2-hour serum insulin (mu U/ml) |
-| `BMI` | Body mass index (kg/m²) |
-| `DiabetesPedigreeFunction` | Family-history score of diabetes |
-| `Age` | Age in years |
+| `Pregnancies` | Número de embarazos |
+| `Glucose` | Concentración de glucosa en plasma (prueba de tolerancia oral a la glucosa de 2 horas, mg/dL) |
+| `BloodPressure` | Presión arterial diastólica (mm Hg) |
+| `SkinThickness` | Grosor del pliegue cutáneo del tríceps (mm) |
+| `Insulin` | Insulina sérica a las 2 horas (mu U/ml) |
+| `BMI` | Índice de masa corporal (kg/m²) |
+| `DiabetesPedigreeFunction` | Puntaje de antecedentes familiares de diabetes |
+| `Age` | Edad en años |
 
-> **Important data detail:** in this dataset a `0` in `Glucose`, `BloodPressure`, `SkinThickness`, `Insulin` or `BMI` does **not** mean a real measurement — it means *"not measured"*. Those zeros are replaced by `NaN` and imputed with the median of the training set inside the model pipeline. The API follows the same convention: send `0` for a value that was not measured.
+> **Detalle importante de los datos:** en este dataset un `0` en `Glucose`, `BloodPressure`, `SkinThickness`, `Insulin` o `BMI` **no** significa una medición real, sino *"no medido"*. Esos ceros se reemplazan por `NaN` y se imputan con la mediana del conjunto de entrenamiento dentro del pipeline del modelo. La API sigue la misma convención: envía `0` para un valor que no fue medido.
 
 ---
 
-## 3. Results
+## 3. Resultados
 
-Three models were compared with 5-fold stratified cross-validation (metric: **ROC AUC**) and tuned with `GridSearchCV`. The test set (20% of the data, 154 patients) was never used during training or tuning.
+Se compararon tres modelos con validación cruzada estratificada de 5 pliegues (métrica: **ROC AUC**) y se ajustaron sus hiperparámetros con `GridSearchCV`. El conjunto de prueba (20% de los datos, 154 pacientes) nunca se usó durante el entrenamiento ni el ajuste.
 
-| Model | Best hyperparameters | CV ROC AUC | Test ROC AUC | Test accuracy | Test F1 |
+| Modelo | Mejores hiperparámetros | ROC AUC (CV) | ROC AUC (prueba) | Exactitud (prueba) | F1 (prueba) |
 |---|---|---|---|---|---|
-| **Logistic Regression** (selected) | `C=0.1`, `class_weight="balanced"` | **0.8450** | **0.8104** | 0.7078 | 0.6154 |
+| **Regresión Logística** (seleccionada) | `C=0.1`, `class_weight="balanced"` | **0.8450** | **0.8104** | 0.7078 | 0.6154 |
 | Random Forest | `n_estimators=400`, `max_depth=4`, `min_samples_leaf=3` | 0.8389 | 0.7996 | 0.7273 | 0.5435 |
 | Gradient Boosting | `n_estimators=100`, `learning_rate=0.05`, `max_depth=2` | 0.8297 | 0.8148 | 0.7208 | 0.5657 |
 
-The logistic regression was selected because it had the best cross-validation score. With `class_weight="balanced"` it also has the best **recall** on the positive class (0.67), which is the metric that matters most in a screening tool: we prefer a false alarm over missing a sick patient.
+Se eligió la regresión logística porque obtuvo el mejor puntaje de validación cruzada. Con `class_weight="balanced"` también tiene el mejor **recall** de la clase positiva (0.67), que es la métrica más importante en una herramienta de tamizaje: preferimos una falsa alarma antes que dejar pasar a un paciente enfermo.
 
-> Full metrics are stored in [`model/metrics.json`](model/metrics.json) and reproduced in [`notebook.ipynb`](notebook.ipynb).
+> Las métricas completas están en [`model/metrics.json`](model/metrics.json) y reproducidas en [`notebook.ipynb`](notebook.ipynb).
 
-### Screenshots
+### Capturas de pantalla
 
-| Input form (`/`) | Prediction result (`POST /predict`) |
+| Formulario de entrada (`/`) | Resultado de la predicción (`POST /predict`) |
 |---|---|
-| ![Input form](docs/form.png) | ![Prediction result](docs/prediction.png) |
+| ![Formulario](docs/form.png) | ![Resultado](docs/prediction.png) |
 
 ---
 
-## 4. Project structure
+## 4. Estructura del proyecto
 
 ```
 diabetes-risk-prediction/
-├── README.md                  # This file
-├── notebook.ipynb             # EDA + model comparison + tuning + evaluation (executed)
-├── train.py                   # Trains and tunes the models, saves the pipeline
-├── predict.py                 # Flask web service (HTML form + JSON API)
-├── download_data.py           # Re-downloads the dataset (optional)
-├── requirements.txt           # Pinned dependencies
-├── Dockerfile                 # Container image for the web service
-├── render.yaml                # One-click deploy configuration for Render
+├── README.md                  # Este archivo
+├── notebook.ipynb             # EDA + comparación de modelos + ajuste + evaluación (ejecutado)
+├── train.py                   # Entrena y ajusta los modelos, guarda el pipeline
+├── predict.py                 # Servicio web Flask (formulario HTML + API JSON)
+├── download_data.py           # Vuelve a descargar el dataset (opcional)
+├── requirements.txt           # Dependencias con versiones fijas
+├── Dockerfile                 # Imagen de contenedor para el servicio web
+├── render.yaml                # Configuración de despliegue en Render
 ├── data/
-│   └── diabetes.csv           # Dataset (committed)
+│   └── diabetes.csv           # Dataset (incluido en el repo)
 └── model/
-    ├── diabetes_pipeline.joblib  # Imputer + scaler + classifier (committed)
-    └── metrics.json              # Metrics of every tuned model
+    ├── diabetes_pipeline.joblib  # Imputador + escalador + clasificador (incluido)
+    └── metrics.json              # Métricas de todos los modelos ajustados
 ```
 
 ---
 
-## 5. How to run
+## 5. Cómo ejecutar el proyecto
 
-### 5.1 Create and activate a virtual environment
+### 5.1 Crear y activar un entorno virtual
 
 ```bash
 # Linux / macOS
@@ -105,55 +105,55 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 5.2 Install the dependencies
+### 5.2 Instalar las dependencias
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5.3 (Optional) download the dataset
+### 5.3 (Opcional) descargar el dataset
 
-The dataset is already committed in `data/diabetes.csv`. To refresh it from the original source:
+El dataset ya está incluido en `data/diabetes.csv`. Para volver a descargarlo desde la fuente original:
 
 ```bash
 python download_data.py
 ```
 
-### 5.4 Train the model
+### 5.4 Entrenar el modelo
 
 ```bash
 python train.py
 ```
 
-Expected output (it takes ~1 minute):
+Salida esperada (tarda ~1 minuto):
 
 ```
-Loading data...
-Rows: 768 | Features: 8 | Positive rate: 34.90%
-Tuning logistic_regression...
-Tuning random_forest...
-Tuning gradient_boosting...
-Best model: logistic_regression (CV ROC AUC = 0.8450)
-Model saved to:   .../model/diabetes_pipeline.joblib
+Cargando datos...
+Filas: 768 | Características: 8 | Tasa de positivos: 34.90%
+Ajustando logistic_regression...
+Ajustando random_forest...
+Ajustando gradient_boosting...
+Mejor modelo: logistic_regression (ROC AUC en CV = 0.8450)
+Modelo guardado en:   .../model/diabetes_pipeline.joblib
 ```
 
-This rewrites `model/diabetes_pipeline.joblib` and `model/metrics.json`.
+Esto reescribe `model/diabetes_pipeline.joblib` y `model/metrics.json`.
 
-### 5.5 Explore the notebook
+### 5.5 Explorar el notebook
 
 ```bash
 jupyter notebook notebook.ipynb
 ```
 
-The notebook is already executed, so the plots and outputs are visible on GitHub/nbviewer. Re-run all the cells if you want to reproduce them (`Kernel → Restart & Run All`).
+El notebook ya está ejecutado, así que los gráficos y resultados se ven directamente en GitHub/nbviewer. Vuelve a ejecutar todas las celdas si quieres reproducirlos (`Kernel → Restart & Run All`).
 
-### 5.6 Run the web service locally
+### 5.6 Ejecutar el servicio web localmente
 
 ```bash
 python predict.py
 ```
 
-Open **<http://localhost:9696>** in your browser, or call the JSON API:
+Abre **<http://localhost:9696>** en el navegador, o llama a la API JSON:
 
 ```bash
 curl -X POST http://localhost:9696/predict \
@@ -165,14 +165,14 @@ curl -X POST http://localhost:9696/predict \
 ```json
 {
   "prediction": 1,
-  "risk_label": "high risk",
+  "risk_label": "riesgo alto",
   "risk_probability": 0.8005,
   "threshold": 0.5,
   "model": "logistic_regression"
 }
 ```
 
-PowerShell equivalent:
+Equivalente en PowerShell:
 
 ```powershell
 $body = @{Pregnancies=6; Glucose=148; BloodPressure=72; SkinThickness=35; Insulin=0;
@@ -180,7 +180,7 @@ $body = @{Pregnancies=6; Glucose=148; BloodPressure=72; SkinThickness=35; Insuli
 Invoke-RestMethod -Uri http://localhost:9696/predict -Method Post -Body $body -ContentType "application/json"
 ```
 
-Health check:
+Verificación de estado:
 
 ```bash
 curl http://localhost:9696/health
@@ -190,62 +190,62 @@ curl http://localhost:9696/health
 
 ## 6. Docker
 
-Build the image:
+Construir la imagen:
 
 ```bash
 docker build -t diabetes-risk-prediction .
 ```
 
-Run the container (the service listens on port 9696):
+Ejecutar el contenedor (el servicio escucha en el puerto 9696):
 
 ```bash
 docker run --rm -p 9696:9696 diabetes-risk-prediction
 ```
 
-Then open <http://localhost:9696> or repeat the `curl` call above.
+Luego abre <http://localhost:9696> o repite la llamada `curl` de arriba.
 
-The image only copies `predict.py` and `model/`, so it does not include the notebook, the training data or the dev dependencies.
-
----
-
-## 7. Deploy to the cloud (Render)
-
-The service reads the standard `$PORT` environment variable, so it works on Render, Railway, Fly.io or any container host. [`render.yaml`](render.yaml) contains the configuration.
-
-1. Push this repository to GitHub.
-2. Create a free account at <https://render.com> and choose **New → Blueprint** (or **New → Web Service** and select the repo).
-3. Render detects the `Dockerfile` and the `render.yaml` automatically.
-4. Wait for the build and copy the public URL (`https://<name>.onrender.com`).
-5. Test it with `curl https://<name>.onrender.com/health`.
-
-Add the resulting URL to the top of this README once it is live.
+La imagen solo copia `predict.py` y `model/`, así que no incluye el notebook, los datos de entrenamiento ni las dependencias de desarrollo.
 
 ---
 
-## 8. How the model was built (summary)
+## 7. Despliegue en la nube (Render)
 
-1. **EDA** — class imbalance, impossible zeros, distributions, boxplots by class, correlation matrix.
-2. **Cleaning** — zeros → `NaN` in the five affected columns.
-3. **Pipeline** — median imputation + standard scaling + classifier, fitted only on the training split to avoid leakage.
-4. **Model selection** — logistic regression, random forest and gradient boosting compared with 5-fold stratified cross-validation.
-5. **Tuning** — `GridSearchCV` over `C`, `class_weight`, tree depth, number of estimators and learning rate.
-6. **Evaluation** — accuracy, precision, recall, F1, ROC AUC and confusion matrix on the held-out test set.
-7. **Export** — `train.py` reproduces the training; the pipeline is saved with `joblib`.
-8. **Serving** — `predict.py` (Flask) exposes an HTML form, a JSON API and a health endpoint; `Dockerfile` containerizes it.
+El servicio lee la variable de entorno estándar `$PORT`, por lo que funciona en Render, Railway, Fly.io o cualquier proveedor de contenedores. El archivo [`render.yaml`](render.yaml) contiene la configuración.
 
----
+1. Sube este repositorio a GitHub.
+2. Crea una cuenta gratuita en <https://render.com> y elige **New → Blueprint** (o **New → Web Service** y selecciona el repo).
+3. Render detecta el `Dockerfile` y el `render.yaml` automáticamente.
+4. Espera a que termine el build y copia la URL pública (`https://<nombre>.onrender.com`).
+5. Pruébala con `curl https://<nombre>.onrender.com/health`.
 
-## 9. Limitations
-
-* Only **768 rows**, all from **women of Pima Indian heritage aged 21+**. The model should not be applied to other populations without retraining.
-* The dataset is old and some values are self-reported; the `Insulin` column is missing in almost half of the rows.
-* The model is a **screening aid**. It must not replace a doctor or a laboratory test.
-* No calibration study was performed, so the probability should be read as a relative risk score rather than an exact clinical probability.
+Cuando esté en línea, agrega la URL al inicio de este README.
 
 ---
 
-## 10. Author
+## 8. Cómo se construyó el modelo (resumen)
 
-**Alvaro Andres Salazar Valdez** — Machine Learning Zoomcamp 2026, midterm project.
+1. **EDA** — desbalance de clases, ceros imposibles, distribuciones, diagramas de caja por clase y matriz de correlación.
+2. **Limpieza** — los ceros se convierten en `NaN` en las cinco columnas afectadas.
+3. **Pipeline** — imputación por mediana + escalado estándar + clasificador, ajustado solo con el conjunto de entrenamiento para evitar fuga de datos.
+4. **Selección de modelo** — regresión logística, random forest y gradient boosting comparados con validación cruzada estratificada de 5 pliegues.
+5. **Ajuste** — `GridSearchCV` sobre `C`, `class_weight`, profundidad de árboles, número de estimadores y tasa de aprendizaje.
+6. **Evaluación** — exactitud, precisión, recall, F1, ROC AUC y matriz de confusión sobre el conjunto de prueba.
+7. **Exportación** — `train.py` reproduce el entrenamiento; el pipeline se guarda con `joblib`.
+8. **Servicio** — `predict.py` (Flask) expone un formulario HTML, una API JSON y un endpoint de salud; `Dockerfile` lo empaqueta.
 
-Dataset: Pima Indians Diabetes Database (NIDDK), distributed via the Plotly datasets repository.
+---
+
+## 9. Limitaciones
+
+* Solo **768 filas**, todas de **mujeres de ascendencia india Pima de 21 años o más**. El modelo no debería aplicarse a otras poblaciones sin reentrenarlo.
+* El dataset es antiguo y algunos valores son autoinformados; la columna `Insulin` falta en casi la mitad de las filas.
+* El modelo es una **ayuda al tamizaje**. No reemplaza al médico ni a una prueba de laboratorio.
+* No se realizó un estudio de calibración, por lo que la probabilidad debe leerse como un puntaje de riesgo relativo y no como una probabilidad clínica exacta.
+
+---
+
+## 10. Autor
+
+**Alvaro Andres Salazar Valdez** — Machine Learning Zoomcamp 2026, proyecto midterm.
+
+Dataset: Pima Indians Diabetes Database (NIDDK), distribuido a través del repositorio de datasets de Plotly.

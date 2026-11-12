@@ -5,15 +5,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install dependencies first so Docker can cache this layer.
+# Instala las dependencias primero para que Docker pueda reutilizar esta capa.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only what the service needs at runtime.
+# Copia solo lo que el servicio necesita en tiempo de ejecución.
 COPY predict.py .
 COPY model/ ./model/
 
 EXPOSE 9696
 
-# Render/Heroku provide $PORT; locally it falls back to 9696.
+# Render/Heroku entregan $PORT; localmente se usa 9696 por defecto.
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-9696} --workers 2 --timeout 60 predict:app"]

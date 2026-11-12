@@ -1,10 +1,10 @@
 """
-Download the Pima Indians Diabetes dataset into data/diabetes.csv.
+Descarga el dataset de diabetes de los indios Pima en data/diabetes.csv.
 
-The dataset is already committed to this repository, so you only need this
-script if you deleted it or want to refresh it from the original source.
+El dataset ya está incluido en este repositorio, así que solo necesitas este
+script si lo borraste o quieres actualizarlo desde la fuente original.
 
-Usage:
+Uso:
     python download_data.py
 """
 
@@ -19,10 +19,10 @@ DATA_PATH = DATA_DIR / "diabetes.csv"
 
 def main() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Downloading {URL} ...")
+    print(f"Descargando {URL} ...")
     df = pd.read_csv(URL)
     df.to_csv(DATA_PATH, index=False)
-    print(f"Saved {len(df)} rows to {DATA_PATH}")
+    print(f"Se guardaron {len(df)} filas en {DATA_PATH}")
 
 
 if __name__ == "__main__":

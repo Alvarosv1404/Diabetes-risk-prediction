@@ -1,9 +1,9 @@
-# Byte-compiled / cache
+# Archivos compilados / caché
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 
-# Virtual environments
+# Entornos virtuales
 .venv/
 venv/
 env/

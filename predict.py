@@ -1,14 +1,14 @@
 """
-Flask web service that serves the diabetes risk model.
+Servicio web Flask que sirve el modelo de riesgo de diabetes.
 
 Endpoints:
-    GET  /         -> HTML form to try the model in a browser
-    POST /predict  -> JSON API (application/json) or HTML form
-    GET  /health   -> health check + model metadata
+    GET  /         -> formulario HTML para probar el modelo en el navegador
+    POST /predict  -> API JSON (application/json) o formulario HTML
+    GET  /health   -> verificación de estado + metadatos del modelo
 
-Usage:
+Uso:
     python predict.py
-    # then open http://localhost:9696
+    # luego abre http://localhost:9696
 """
 
 from __future__ import annotations
@@ -23,44 +23,43 @@ from flask import Flask, jsonify, render_template_string, request
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "model" / "diabetes_pipeline.joblib"
 
-# (label, default, min, max, step, help text)
+# (etiqueta, valor por defecto, mínimo, máximo, paso, texto de ayuda)
 FIELD_INFO = {
-    "Pregnancies": ("Number of pregnancies", 2, 0, 20, 1, "How many times the patient has been pregnant"),
-    "Glucose": ("Glucose (mg/dL)", 120, 0, 300, 1, "Plasma glucose concentration (2-hour OGTT). 0 = not measured"),
-    "BloodPressure": ("Blood pressure (mm Hg)", 70, 0, 200, 1, "Diastolic blood pressure. 0 = not measured"),
-    "SkinThickness": ("Skin thickness (mm)", 25, 0, 100, 1, "Triceps skin fold thickness. 0 = not measured"),
-    "Insulin": ("Insulin (mu U/ml)", 100, 0, 900, 1, "2-hour serum insulin. 0 = not measured"),
-    "BMI": ("BMI", 28.0, 0.0, 70.0, 0.1, "Body mass index (kg / m^2). 0 = not measured"),
-    "DiabetesPedigreeFunction": ("Diabetes pedigree function", 0.5, 0.0, 3.0, 0.01, "Family-history score of diabetes"),
-    "Age": ("Age (years)", 35, 1, 120, 1, "Age of the patient"),
+    "Pregnancies": ("Número de embarazos", 2, 0, 20, 1, "Cuántas veces ha estado embarazada la paciente"),
+    "Glucose": ("Glucosa (mg/dL)", 120, 0, 300, 1, "Glucosa en plasma (prueba de tolerancia oral de 2 h). 0 = no medido"),
+    "BloodPressure": ("Presión arterial (mm Hg)", 70, 0, 200, 1, "Presión arterial diastólica. 0 = no medido"),
+    "SkinThickness": ("Grosor del pliegue cutáneo (mm)", 25, 0, 100, 1, "Pliegue cutáneo del tríceps. 0 = no medido"),
+    "Insulin": ("Insulina (mu U/ml)", 100, 0, 900, 1, "Insulina sérica a las 2 h. 0 = no medido"),
+    "BMI": ("IMC", 28.0, 0.0, 70.0, 0.1, "Índice de masa corporal (kg / m²). 0 = no medido"),
+    "DiabetesPedigreeFunction": ("Función de pedigrí diabético", 0.5, 0.0, 3.0, 0.01, "Puntaje de antecedentes familiares de diabetes"),
+    "Age": ("Edad (años)", 35, 1, 120, 1, "Edad de la paciente"),
 }
 
-# Same convention as train.py: a zero in these columns means "not measured".
+# Misma convención que train.py: un cero en estas columnas significa "no medido".
 ZERO_AS_MISSING = {"Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI"}
-
 
 if MODEL_PATH.exists():
     BUNDLE = joblib.load(MODEL_PATH)
     MODEL = BUNDLE["model"]
     FEATURES = BUNDLE["features"]
     THRESHOLD = BUNDLE.get("threshold", 0.5)
-    MODEL_NAME = BUNDLE.get("model_name", "unknown")
-else:  # pragma: no cover - only when the model was not trained yet
+    MODEL_NAME = BUNDLE.get("model_name", "desconocido")
+else:  # pragma: no cover - solo si el modelo aún no se entrenó
     BUNDLE = None
     MODEL = None
     FEATURES = list(FIELD_INFO)
     THRESHOLD = 0.5
-    MODEL_NAME = "model not trained"
+    MODEL_NAME = "modelo no entrenado"
 
 app = Flask(__name__)
 
 PAGE_TEMPLATE = """
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Diabetes Risk Predictor</title>
+  <title>Predictor de Riesgo de Diabetes</title>
   <style>
     :root { --bg:#0f172a; --card:#1e293b; --accent:#38bdf8; --text:#e2e8f0; --muted:#94a3b8; }
     * { box-sizing: border-box; }
@@ -94,8 +93,8 @@ PAGE_TEMPLATE = """
 </head>
 <body>
   <div class="card">
-    <h1>Diabetes Risk Predictor</h1>
-    <p class="sub">Enter the patient's clinical values and the model will estimate the probability of diabetes.</p>
+    <h1>Predictor de Riesgo de Diabetes</h1>
+    <p class="sub">Ingresa los valores clínicos del paciente y el modelo estimará la probabilidad de diabetes.</p>
     <form method="post" action="/predict">
       <div class="grid">
         {% for name, info in fields.items() %}
@@ -106,20 +105,20 @@ PAGE_TEMPLATE = """
         </div>
         {% endfor %}
       </div>
-      <button type="submit">Predict risk</button>
+      <button type="submit">Predecir riesgo</button>
     </form>
     {% if error %}<div class="error">{{ error }}</div>{% endif %}
     {% if result %}
     <div class="result">
       <span class="pill {{ 'high' if result.prediction == 1 else 'low' }}">
-        {{ 'High risk' if result.prediction == 1 else 'Low risk' }}
+        {{ 'Riesgo alto' if result.prediction == 1 else 'Riesgo bajo' }}
       </span>
       <div class="prob">{{ '%.1f'|format(result.risk_probability * 100) }}%</div>
       <div class="bar"><span style="width: {{ (result.risk_probability * 100)|round(1) }}%"></span></div>
-      <div class="sub" style="margin:0">Probability of diabetes (threshold {{ result.threshold }}). Model: {{ result.model }}.</div>
+      <div class="sub" style="margin:0">Probabilidad de diabetes (umbral {{ result.threshold }}). Modelo: {{ result.model }}.</div>
     </div>
     {% endif %}
-    <footer>POST JSON to <code>/predict</code> &middot; health check at <code>/health</code></footer>
+    <footer>Envía JSON a <code>/predict</code> &middot; estado en <code>/health</code></footer>
   </div>
 </body>
 </html>
@@ -127,22 +126,22 @@ PAGE_TEMPLATE = """
 
 
 def parse_payload(payload: dict) -> dict:
-    """Validate and convert the incoming values to floats."""
+    """Valida y convierte los valores recibidos a números."""
     values = {}
     missing = [name for name in FEATURES if name not in payload or str(payload[name]).strip() == ""]
     if missing:
-        raise ValueError(f"Missing fields: {', '.join(missing)}")
+        raise ValueError(f"Faltan campos: {', '.join(missing)}")
 
     for name in FEATURES:
         try:
             value = float(payload[name])
         except (TypeError, ValueError):
-            raise ValueError(f"Field '{name}' must be a number, got {payload[name]!r}")
+            raise ValueError(f"El campo '{name}' debe ser un número, se recibió {payload[name]!r}")
         _, _, low, high, _, _ = FIELD_INFO[name]
         if not (low <= value <= high):
-            raise ValueError(f"Field '{name}' must be between {low} and {high}, got {value}")
+            raise ValueError(f"El campo '{name}' debe estar entre {low} y {high}, se recibió {value}")
         if name in ZERO_AS_MISSING and value == 0:
-            value = float("nan")  # the imputer will fill it with the training median
+            value = float("nan")  # el imputador lo rellena con la mediana del entrenamiento
         values[name] = value
     return values
 
@@ -153,7 +152,7 @@ def make_prediction(values: dict) -> dict:
     prediction = int(probability >= THRESHOLD)
     return {
         "prediction": prediction,
-        "risk_label": "high risk" if prediction == 1 else "low risk",
+        "risk_label": "riesgo alto" if prediction == 1 else "riesgo bajo",
         "risk_probability": round(probability, 4),
         "threshold": THRESHOLD,
         "model": MODEL_NAME,
@@ -169,11 +168,11 @@ def index():
 @app.post("/predict")
 def predict():
     if MODEL is None:
-        return jsonify({"error": "Model not found. Run 'python train.py' first."}), 503
+        return jsonify({"error": "No se encontró el modelo. Ejecuta 'python train.py' primero."}), 503
 
     payload = request.get_json(silent=True) if request.is_json else request.form.to_dict()
     if payload is None:
-        return jsonify({"error": "Send a JSON body or a form."}), 400
+        return jsonify({"error": "Envía un cuerpo JSON o un formulario."}), 400
 
     try:
         values = parse_payload(payload)
