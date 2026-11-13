@@ -2,10 +2,13 @@
 
 Servicio web de machine learning que estima la probabilidad de que un paciente tenga diabetes a partir de mediciones clínicas rutinarias.
 
+**Servicio en vivo:** <https://diabetes-risk-prediction-sigma.vercel.app>
+
 [![Python](https://img.shields.io/badge/Python-3.13%2B-blue)](https://www.python.org/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-orange)](https://scikit-learn.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1-black)](https://flask.palletsprojects.com/)
 [![Docker](https://img.shields.io/badge/Docker-listo-2496ED)](https://www.docker.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-en%20vivo-black)](https://diabetes-risk-prediction-sigma.vercel.app)
 
 ---
 
@@ -226,17 +229,23 @@ El servicio se despliega **tal cual** en [Vercel](https://vercel.com) con el pla
 2. Clic en **Add New → Project** e importa el repositorio `diabetes-risk-prediction`.
 3. No cambies ninguna opción: Vercel detecta Flask, instala `requirements.txt` y usa Python 3.13 gracias al archivo `.python-version`.
 4. Clic en **Deploy** y espera un par de minutos.
-5. Tu URL pública quedará como `https://diabetes-risk-prediction.vercel.app`.
+5. La URL pública queda como `https://diabetes-risk-prediction-sigma.vercel.app`.
 
 Comprueba que responde:
 
 ```bash
-curl https://TU-URL.vercel.app/health
+curl https://diabetes-risk-prediction-sigma.vercel.app/health
 ```
 
 ```json
 {"status": "ok", "model_loaded": true, "model": "Regresión Logística", "features": ["..."]}
 ```
+
+### Servicio en vivo
+
+**<https://diabetes-risk-prediction-sigma.vercel.app>**
+
+[![Servicio desplegado en Vercel](docs/vercel.png)](https://diabetes-risk-prediction-sigma.vercel.app)
 
 El repositorio también incluye un `Dockerfile`, así que el mismo servicio puede desplegarse en cualquier plataforma de contenedores (Render, Railway, Fly.io, Cloud Run). En ese caso el contenedor escucha en `$PORT` y arranca con `gunicorn app:app`.
 
