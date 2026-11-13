@@ -18,7 +18,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from flask import Flask, jsonify, render_template_string, request
+from flask import Flask, Response, jsonify, redirect, render_template_string, request
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "model" / "diabetes_pipeline.joblib"
@@ -53,6 +53,20 @@ else:  # pragma: no cover - solo si el modelo aún no se entrenó
 
 app = Flask(__name__)
 
+# Logo de la aplicación: una gota de sangre con una línea de pulso.
+FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Predictor de riesgo de diabetes">
+  <defs>
+    <linearGradient id="drop" x1="18" y1="12" x2="46" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <path d="M32 9c7.5 9.6 13.5 17 13.5 24a13.5 13.5 0 0 1-27 0C18.5 26 24.5 18.6 32 9Z" fill="url(#drop)"/>
+  <path d="M23 35.5h4.6l2.6-6.2 3.8 12 2.7-5.8H41" fill="none" stroke="#0f172a" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+"""
+
 PAGE_TEMPLATE = """
 <!doctype html>
 <html lang="es">
@@ -60,6 +74,8 @@ PAGE_TEMPLATE = """
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Predictor de Riesgo de Diabetes</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="theme-color" content="#0f172a">
   <style>
     :root { --bg:#0f172a; --card:#1e293b; --accent:#38bdf8; --text:#e2e8f0; --muted:#94a3b8; }
     * { box-sizing: border-box; }
@@ -68,8 +84,10 @@ PAGE_TEMPLATE = """
            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--text); padding:24px; }
     .card { width:100%; max-width:760px; background:rgba(30,41,59,.92); border:1px solid #334155;
             border-radius:18px; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,.45); }
-    h1 { margin:0 0 6px; font-size:1.6rem; }
-    p.sub { margin:0 0 22px; color:var(--muted); font-size:.95rem; }
+    .brand { display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+    .brand img { width:46px; height:46px; border-radius:12px; flex-shrink:0; }
+    h1 { margin:0 0 4px; font-size:1.6rem; }
+    .brand p.sub { margin:0; color:var(--muted); font-size:.95rem; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; }
     label { display:block; font-size:.85rem; margin-bottom:5px; color:var(--muted); }
     input { width:100%; padding:10px 12px; border-radius:9px; border:1px solid #475569;
@@ -93,8 +111,13 @@ PAGE_TEMPLATE = """
 </head>
 <body>
   <div class="card">
-    <h1>Predictor de Riesgo de Diabetes</h1>
-    <p class="sub">Ingresa los valores clínicos del paciente y el modelo estimará la probabilidad de diabetes.</p>
+    <div class="brand">
+      <img src="/favicon.svg" alt="Logo del predictor" width="46" height="46">
+      <div>
+        <h1>Predictor de Riesgo de Diabetes</h1>
+        <p class="sub">Ingresa los valores clínicos del paciente y el modelo estimará la probabilidad de diabetes.</p>
+      </div>
+    </div>
     <form method="post" action="/predict">
       <div class="grid">
         {% for name, info in fields.items() %}
@@ -157,6 +180,22 @@ def make_prediction(values: dict) -> dict:
         "threshold": THRESHOLD,
         "model": MODEL_NAME,
     }
+
+
+@app.get("/favicon.svg")
+def favicon():
+    """Sirve el logo usado como icono de la pestaña del navegador."""
+    return Response(
+        FAVICON_SVG,
+        mimetype="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=604800"},
+    )
+
+
+@app.get("/favicon.ico")
+def favicon_ico():
+    """Los navegadores antiguos piden /favicon.ico; se redirigen al SVG."""
+    return redirect("/favicon.svg", code=308)
 
 
 @app.get("/")
