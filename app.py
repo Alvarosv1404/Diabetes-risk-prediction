@@ -141,7 +141,6 @@ PAGE_TEMPLATE = """
       <div class="sub" style="margin:0">Probabilidad de diabetes (umbral {{ result.threshold }}). Modelo: {{ result.model }}.</div>
     </div>
     {% endif %}
-    <footer>Envía JSON a <code>/predict</code> &middot; estado en <code>/health</code></footer>
   </div>
 </body>
 </html>
